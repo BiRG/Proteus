@@ -491,12 +491,11 @@ public partial class _Default : Page
         b.Text = "photo";
         b.ID = id;
         
-        if (id == "F1331")
-        {
-            sendPicInfo(id, name);
-        }
+       
+        sendPicInfo(id, name);
         string s = photoQueryString;
-        b.OnClientClick = "Navigate()" + sendPicInfo(id,name);
+        b.OnClientClick = "Navigate()";
+        //b.OnClientClick = "Navigate()" + sendPicInfo(id,name);
        // b.Click +=  new EventHandler(this.sendPicInfo);// this is where we would add a method that links to the legacy page for further information
         return b;                                              //on a survey unit or feature
     }
