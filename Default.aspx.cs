@@ -12,7 +12,8 @@ public partial class _Default : Page
     public int loadcount = 0;
     public static String connectionString = "Data Source=geodata.cofc.edu;Initial Catalog=Avkat_mysql;Integrated Security=SSPI";
     public String FILE_NAME = @"C:\QueryOutputs\QueryResult.csv";
-    public static string photoQueryString = "http://earth.cofc.edu/avkat_photos/viewphotos.html?";
+    public static string photoQueryString = "https://earth.cofc.edu/avkat_photos/viewphotos.html?";
+    public static string legacyString = "https://earth.cofc.edu/avkat/avkat/index.php?";
 
     public static string sendPicInfo(string id, string name)
     {
@@ -39,9 +40,13 @@ public partial class _Default : Page
             }
             listString += "]";
             photoString += listString;
-            photoQueryString += photoString;
         }
-        return "";
+        return photoQueryString+photoString;
+    }
+
+    public static string getLegacyInfo(string id, string type)
+    {
+        return legacyString + "m=" + type + "&I=" + id;
     }
 
     
@@ -51,7 +56,7 @@ public partial class _Default : Page
         DropDownList1.Items.Add("Feature");
         DropDownList1.Items.Add("Survey Unit");
         DropDownList1.Items.Add("Ceramic");
-        DropDownList1.Items.Add("Image");
+       
             
 
         String sql = "select Period_code from chronology";
@@ -104,18 +109,92 @@ public partial class _Default : Page
     }
     protected void Button1_Click(object sender, EventArgs e)
     {
+        bool andBool = false;
+        bool useEra1 = false;
         if (DropDownList1.Text.Equals("Feature"))
         {
-            bool useEra = false;
-            if(TextBox1.Text.Equals("") || TextBox2.Text.Equals(""))
+
+            string sql = "select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features";
+            if (!TextBox1.Text.Equals("") || !TextBox2.Text.Equals("") || !(DropDownList2.Text == "All") || !(DropDownList3.Text == "All") || !(TextBox3.Text == "") || !(DropDownList4.Text == "All"))
             {
-                useEra = true;
+                sql = sql + " where";
             }
-            String sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' and {1} != 0 ", DropDownList2.Text, DropDownList3.Text);
-            if (!useEra)
+
+            if (TextBox3.Text != "")
             {
-                sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' and Begin_date >= {1} and End_date <= {2}", DropDownList2.Text, TextBox1.Text, TextBox2.Text);
+                string temp = string.Format(" FeatureID = '{0}'", TextBox3.Text);
+                sql += temp;
+                andBool = true;
             }
+
+            if (DropDownList3.Text != "All")
+            {
+                if (andBool)
+                {
+                    sql += " and";
+                }
+
+                string temp = string.Format(" {0} != 0 ", DropDownList3.Text);
+                sql += temp;
+                andBool = true;
+                useEra1 = true;
+            }
+
+            if (TextBox1.Text != "" && TextBox2.Text != "" && !useEra1)
+            {
+                if (andBool)
+                {
+                    sql += " and";
+                }
+                string temp = string.Format(" Begin_Date >= (select Date_begin from chronology where Date_begin <= {0} and Date_end >= {0})  and End_Date <= (select Date_end from chronology where Date_begin <= {1} and Date_end >= {1})", TextBox1.Text, TextBox2.Text);
+                sql += temp;
+                andBool = true;
+            }
+
+            if (DropDownList4.Text != "Any")
+            {
+                if (andBool)
+                {
+                    sql += " and";
+                }
+                string temp = string.Format(" Ceramics = {0}", DropDownList4.Text);
+                sql += temp;
+                andBool = true;
+            }
+
+
+
+
+            //bool useEra = false;
+            //if(TextBox1.Text.Equals("") || TextBox2.Text.Equals(""))
+            //{
+            //    useEra = true;
+            //}
+            //String sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' and {1} != 0 ", DropDownList2.Text, DropDownList3.Text);
+            //if (!useEra)
+            //{
+            //    sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' and Begin_Date >= (select Date_begin from chronology where Date_begin <= {1} and Date_end >= {1})  and End_Date <= (select Date_end from chronology where Date_begin <= {2} and Date_end >= {2})", DropDownList2.Text, TextBox1.Text, TextBox2.Text);
+            //}
+            //if (DropDownList2.Text == "All")
+            //{
+            //    sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where {0} != 0 ", DropDownList3.Text);
+            //    if (!useEra)
+            //    {
+            //        sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where Begin_Date >= (select Date_begin from chronology where Date_begin <= {0} and Date_end >= {0})  and End_Date <= (select Date_end from chronology where Date_begin <= {1} and Date_end >= {1})", TextBox1.Text, TextBox2.Text);
+            //    }
+            //}
+            //if(DropDownList3.Text == "All")
+            //{
+            //    sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' ", DropDownList2.Text);
+            //    if (!useEra)
+            //    {
+            //        sql = string.Format("select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features where FeatureType = '{0}' and Begin_Date >= (select Date_begin from chronology where Date_begin <= {1} and Date_end >= {1})  and End_Date <= (select Date_end from chronology where Date_begin <= {2} and Date_end >= {2})", DropDownList2.Text, TextBox1.Text, TextBox2.Text);
+            //    }
+            //}
+            //if (DropDownList2.Text == "All" && DropDownList3.Text == "All")
+            //{
+            //    sql = "select FeatureName, FeatureType, FeatureID, Begin_Date, End_Date, Ceramics from features";
+            //}
 
             TableRow initRow = new TableRow();
             Table1.Rows.Add(initRow);
@@ -127,15 +206,15 @@ public partial class _Default : Page
             TableCell photoCell1 = new TableCell();
             TableCell but1Cell = new TableCell();
             TableCell cerCell = new TableCell();
-            
+
             photoCell1.Text = "View Photo";
             but1Cell.Text = "View Detailed info";
-            idCell1.Text ="Feature id";
+            idCell1.Text = "Feature id";
             fnCell.Text = "Feature Name";
             ftCell.Text = "feature Type";
             begCell.Text = "Date begin";
             endCell.Text = "Date End";
-          
+
 
             initRow.Cells.Add(but1Cell);
             initRow.Cells.Add(photoCell1);
@@ -144,9 +223,9 @@ public partial class _Default : Page
             initRow.Cells.Add(ftCell);
             initRow.Cells.Add(begCell);
             initRow.Cells.Add(endCell);
-          
-            
-                
+
+
+
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 SqlCommand com = new SqlCommand(sql, connection);
@@ -173,7 +252,7 @@ public partial class _Default : Page
                     bdCell.Text = dateBegin;
                     edCell.Text = dateEnd;
                     idCell.Text = fid;
-                    butCell.Controls.Add(CreateButton(fid, Fname));
+                    butCell.Controls.Add(CreateButton(fid, "Feature"));
                     photoCell.Controls.Add(CreatePhotoButton(fid, Fname));
                     tRow.Cells.Add(butCell);
                     tRow.Cells.Add(photoCell);
@@ -189,75 +268,110 @@ public partial class _Default : Page
             }
         }
 
-            else if (DropDownList1.Text.Equals("Survey Unit"))// data for survey units is not yet functional
+
+        else if (DropDownList1.Text.Equals("Survey Unit"))// data for survey units is not yet functional
+        {
+
+            String sql = string.Format("select SUID, Date, Ceramics from surveyunits where Ceramics = {0}", DropDownList4.Text);
+            if (DropDownList4.Text == "Any")
             {
-                
-                String sql = string.Format("select SUID, Date, Ceramics from surveyunits where Ceramics = {0}", DropDownList4.Text);
-
-                TableRow initRow = new TableRow();
-                Table1.Rows.Add(initRow);
-                TableCell s1Cell = new TableCell();
-                TableCell d1Cell = new TableCell();
-                TableCell c1Cell = new TableCell();
-                TableCell but1Cell = new TableCell();
-                TableCell photoCell1 = new TableCell();
-                photoCell1.Text = "View Photo";
-                but1Cell.Text = "View Detailed info";
-                s1Cell.Text = "Survey Unit";
-                d1Cell.Text = "Date";
-                c1Cell.Text = "Ceramic(Y/N)";
-
-                initRow.Cells.Add(but1Cell);
-                initRow.Cells.Add(photoCell1);
-                initRow.Cells.Add(s1Cell);
-                initRow.Cells.Add(c1Cell);
-                initRow.Cells.Add(d1Cell);
-                
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    SqlCommand com = new SqlCommand(sql, connection);
-                    connection.Open();
-                    SqlDataReader reader = com.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        string suid = reader["SUID"].ToString();
-                        string date = reader["Date"].ToString();
-                        string cer = reader["Ceramics"].ToString();
-                       
-                        TableRow tRow = new TableRow();
-                        Table1.Rows.Add(tRow);
-                        TableCell sCell = new TableCell();
-                        TableCell dCell = new TableCell();
-                        TableCell cCell = new TableCell();
-                        TableCell butCell = new TableCell();
-                        TableCell photoCell = new TableCell();
-                        sCell.Text = suid;
-                        dCell.Text = date;
-                        cCell.Text = cer;
-                       
-                        butCell.Controls.Add(CreateButton(suid, "Survey Unit"));
-                        photoCell.Controls.Add(CreatePhotoButton(suid,"Survey Unit"));
-                        tRow.Cells.Add(butCell);
-                        tRow.Cells.Add(photoCell);
-                        tRow.Cells.Add(sCell);
-                        tRow.Cells.Add(cCell);
-                        tRow.Cells.Add(dCell);
-                        
-                    }
-                }   
+                sql = "select SUID, Date, Ceramics from surveyunits";
             }
-        else if(DropDownList1.Text.Equals("Ceramic"))
+
+            TableRow initRow = new TableRow();
+            Table1.Rows.Add(initRow);
+            TableCell s1Cell = new TableCell();
+            TableCell d1Cell = new TableCell();
+            TableCell c1Cell = new TableCell();
+            TableCell but1Cell = new TableCell();
+            TableCell photoCell1 = new TableCell();
+            photoCell1.Text = "View Photo";
+            but1Cell.Text = "View Detailed info";
+            s1Cell.Text = "Survey Unit";
+            d1Cell.Text = "Date";
+            c1Cell.Text = "Ceramic(Y/N)";
+
+            initRow.Cells.Add(but1Cell);
+            initRow.Cells.Add(photoCell1);
+            initRow.Cells.Add(s1Cell);
+            initRow.Cells.Add(c1Cell);
+            initRow.Cells.Add(d1Cell);
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand com = new SqlCommand(sql, connection);
+                connection.Open();
+                SqlDataReader reader = com.ExecuteReader();
+                while (reader.Read())
+                {
+                    string suid = reader["SUID"].ToString();
+                    string date = reader["Date"].ToString();
+                    string cer = reader["Ceramics"].ToString();
+
+                    TableRow tRow = new TableRow();
+                    Table1.Rows.Add(tRow);
+                    TableCell sCell = new TableCell();
+                    TableCell dCell = new TableCell();
+                    TableCell cCell = new TableCell();
+                    TableCell butCell = new TableCell();
+                    TableCell photoCell = new TableCell();
+                    sCell.Text = suid;
+                    dCell.Text = date;
+                    cCell.Text = cer;
+
+                    butCell.Controls.Add(CreateButton(suid, "Survey Unit"));
+                    photoCell.Controls.Add(CreatePhotoButton(suid, "Survey Unit"));
+                    tRow.Cells.Add(butCell);
+                    tRow.Cells.Add(photoCell);
+                    tRow.Cells.Add(sCell);
+                    tRow.Cells.Add(cCell);
+                    tRow.Cells.Add(dCell);
+
+                }
+            }
+        }
+        else if (DropDownList1.Text.Equals("Ceramic"))
         {
             bool useEra = false;
-            if (TextBox1.Text.Equals("") || TextBox2.Text.Equals(""))
+            bool whereTrue = false;
+            string sql = "select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics";
+            if (TextBox1.Text.Equals("") || TextBox2.Text.Equals("") || DropDownList3.Text != "Any")
             {
                 useEra = true;
             }
-            String sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics where {0} != 0 ", DropDownList2.Text);
-            if (!useEra)
+            if (DropDownList3.Text != "All")
             {
-                sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics where Begin_Date >= {0} and End_Date <= {1}  ", TextBox1.Text, TextBox2.Text);
+                sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics where {0} != 0 ", DropDownList3.Text);
+                whereTrue = true;
             }
+            if (!useEra && TextBox1.Text == "" && TextBox2.Text == "")
+            {
+                sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics where Begin_Date >= (select Date_begin from chronology where Date_begin <= {0} and Date_end >= {0})  and End_Date <= (select Date_end from chronology where Date_begin <= {1} and Date_end >= {1})  ", TextBox1.Text, TextBox2.Text);
+                whereTrue = true;
+            }
+
+            if (DropDownList3.Text == "All")
+            {
+                sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics");
+                if (!useEra)
+                {
+                    sql = string.Format("select Unit, Inventory_no, Vessel_Type_Count, Begin_date, End_date, Rim_Count, Body_Count, Handle_Count, Base_Count, Lid_Count, Spout_Count, Complete_Count, Tile_Count, Shape_Count, Pithos_Count, Plain_Storage_Count, Cooking_Count, Plain_Open_Count, Plain_Closed_Count, Fine_Count, Glazed_Cooking_Count, Glazed_Open_Count, Glazed_Closed_Count, Unknown_Type_Count, Other_Ceramic_Type, Other_Type_Description from v_ceramics where Begin_Date >= (select Date_begin from chronology where Date_begin <= {0} and Date_end >= {0})  and End_Date <= (select Date_end from chronology where Date_begin <= {1} and Date_end >= {1})  ", TextBox1.Text, TextBox2.Text);
+                    whereTrue = true;
+                }
+            }
+
+            if (TextBox4.Text != "")
+            {
+                if (!whereTrue)
+                {
+                    sql += string.Format(" where Comments like '%{0}%'", TextBox4.Text);
+                }
+                else
+                {
+                    sql += string.Format(" and Comments like '%{0}%'", TextBox4.Text);
+                }
+            }
+
 
             TableRow initRow = new TableRow();
             Table1.Rows.Add(initRow);
@@ -316,7 +430,7 @@ public partial class _Default : Page
             unkCelli.Text = "Unknown Count";
             otherCelli.Text = "Other Type Count";
             otherdCelli.Text = "Other Type Description";
-            
+
 
 
             initRow.Cells.Add(but1Cell);
@@ -347,7 +461,7 @@ public partial class _Default : Page
             initRow.Cells.Add(otherdCelli);
 
 
-            
+
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -439,8 +553,9 @@ public partial class _Default : Page
                     otherCell.Text = otherc;
                     otherdCell.Text = otherd;
 
-                    tRow.Cells.Add(photoCell);
+
                     tRow.Cells.Add(butCell);
+                    tRow.Cells.Add(photoCell);
                     tRow.Cells.Add(uCell);
                     tRow.Cells.Add(InCell);
                     tRow.Cells.Add(vtCell);
@@ -474,36 +589,26 @@ public partial class _Default : Page
     }
 
 
-    private Button CreateButton(string id, string name)
+    private HyperLink CreateButton(string id, string type)
     {
-        Button b = new Button();
-        List<string> photos = new List<string>();
+        HyperLink b = new HyperLink();
         b.Text = "info";
         b.ID = id;
-       //b.OnClick() = new ; // this is where we would add a method that links to the legacy page for further information
-        return b;                                              //on a survey unit or feature
+        b.NavigateUrl = getLegacyInfo(id,type);
+        return b;                                              
     }
 
-    private Button CreatePhotoButton(string id, string name)
-    {
-        
-        Button b = new Button();
-        b.Text = "photo";
-        b.ID = id;
-        
-       
-        sendPicInfo(id, name);
-        string s = photoQueryString;
-        b.OnClientClick = "Navigate()";
-        //b.OnClientClick = "Navigate()" + sendPicInfo(id,name);
-       // b.Click +=  new EventHandler(this.sendPicInfo);// this is where we would add a method that links to the legacy page for further information
-        return b;                                              //on a survey unit or feature
-    }
-
-    private void goToLegacy(String featureid) // open a new tab to our legacy site to view further information
+    private HyperLink CreatePhotoButton(string id, string name)
     {
 
+        HyperLink c = new HyperLink();
+        c.Text = "photos";
+        c.NavigateUrl = sendPicInfo(id,name);
+      
+        return c;                                              
     }
+
+    
     
 
     protected void Button2_Click(object sender, EventArgs e)
@@ -653,4 +758,8 @@ public partial class _Default : Page
 
 
 
+    protected void DropDownList3_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
 }
